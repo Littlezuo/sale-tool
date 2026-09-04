@@ -1,1 +1,186 @@
 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>开单工具</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/dom-to-image@2.6.0/dist/dom-to-image.min.js"></script>
+</head>
+<body>
+<div class="app">
+    <!-- 顶部标题栏 -->
+    <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="菜单">☰</button>
+        <div class="topbar-title" id="topbar-title">开单</div>
+        <span class="topbar-spacer"></span>
+    </header>
+
+    <!-- 视图容器 -->
+    <main class="views">
+        <!-- 视图：开单 -->
+        <section id="view-order" class="view active">
+            <div class="order-layout">
+                <!-- 左：开单表单 -->
+                <div class="order-form">
+                    <div class="panel">
+                        <h2 class="panel-title">新建开单</h2>
+
+                        <!-- 客户信息 -->
+                        <div class="form-row">
+                            <label class="form-label" for="customer-name">客户名称</label>
+                            <input type="text" id="customer-name" class="input" placeholder="选填">
+                        </div>
+
+                        <!-- 整单备注 -->
+                        <div class="form-row">
+                            <label class="form-label" for="order-note">备注</label>
+                            <input type="text" id="order-note" class="input" placeholder="选填">
+                        </div>
+
+                        <!-- 选择商品入口 -->
+                        <div class="form-row">
+                            <label class="form-label">选择商品</label>
+                            <button type="button" id="btn-open-picker" class="input picker-trigger">
+                                <span class="picker-trigger-text">点击选择商品</span>
+                                <span class="picker-trigger-arrow">›</span>
+                            </button>
+                        </div>
+
+                        <!-- 明细列表 -->
+                        <div class="form-row">
+                            <label class="form-label">商品明细</label>
+                            <div id="order-lines" class="order-lines">
+                                <div class="empty-tip" id="empty-tip">尚未添加商品</div>
+                            </div>
+                        </div>
+
+                        <!-- 合计 -->
+                        <div class="form-row total-row">
+                            <span>合计金额</span>
+                            <span class="total-amount" id="total-amount">¥0.00</span>
+                        </div>
+
+                        <button id="btn-reset" class="btn btn-ghost">清空开单</button>
+                    </div>
+                </div>
+
+                <!-- 右：票据预览 -->
+                <div class="order-preview">
+                    <div class="panel">
+                        <div class="preview-toolbar">
+                            <h2 class="panel-title">票据预览</h2>
+                            <button id="btn-export" class="btn btn-primary">保存为图片</button>
+                        </div>
+                        <div id="receipt" class="receipt"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 视图：商品管理 -->
+        <section id="view-products" class="view">
+            <div class="panel">
+                <h2 class="panel-title">商品管理</h2>
+
+                <form id="product-form" class="product-form">
+                    <div class="form-row">
+                        <label class="form-label" for="p-code">商品编号</label>
+                        <input type="text" id="p-code" class="input" placeholder="如 SP001">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="p-name">商品名称</label>
+                        <input type="text" id="p-name" class="input" placeholder="如 苹果">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="p-unit">单位</label>
+                        <input type="text" id="p-unit" class="input" placeholder="如 个 / 斤 / 箱">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="p-price">单价</label>
+                        <input type="number" id="p-price" class="input" placeholder="如 8.00" min="0" step="0.01">
+                    </div>
+                    <input type="hidden" id="p-id">
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="btn-save-product">保存商品</button>
+                        <button type="button" class="btn btn-ghost" id="btn-cancel-edit">取消编辑</button>
+                    </div>
+                </form>
+
+                <div class="product-list-header">
+                    <h3>商品列表 (<span id="product-count">0</span>)</h3>
+                    <input type="text" id="product-filter" class="input input-sm" placeholder="搜索商品…">
+                </div>
+                <ul id="product-list" class="product-list"></ul>
+            </div>
+        </section>
+
+        <!-- 视图：店铺配置 -->
+        <section id="view-settings" class="view">
+            <div class="panel">
+                <h2 class="panel-title">店铺配置</h2>
+                <p class="hint">以下信息会显示在开单票据上，请提前配置好。</p>
+
+                <form id="settings-form">
+                    <div class="form-row">
+                        <label class="form-label" for="s-shop">店铺名称</label>
+                        <input type="text" id="s-shop" class="input">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="s-warehouse">发货仓库</label>
+                        <input type="text" id="s-warehouse" class="input">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="s-operator">制单人</label>
+                        <input type="text" id="s-operator" class="input">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="s-address">地址</label>
+                        <input type="text" id="s-address" class="input">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label" for="s-phone">联系电话</label>
+                        <input type="text" id="s-phone" class="input">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">保存配置</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- 侧边菜单抽屉 -->
+<div class="drawer-mask" id="menu-mask"></div>
+<aside class="menu-drawer" id="menu-drawer">
+    <div class="menu-header">
+        <span class="menu-title">菜单</span>
+    </div>
+    <ul class="menu-list">
+        <li class="menu-item active" data-view="view-order">📋 开单</li>
+        <li class="menu-item" data-view="view-products">📦 商品管理</li>
+        <li class="menu-item" data-view="view-settings">⚙️ 店铺配置</li>
+    </ul>
+</aside>
+
+<!-- 选商品抽屉 -->
+<div class="drawer-mask" id="drawer-mask"></div>
+<aside class="drawer" id="drawer">
+    <div class="drawer-header">
+        <span class="drawer-title">选择商品</span>
+        <button class="drawer-close" id="drawer-close">✕</button>
+    </div>
+    <div class="drawer-search">
+        <input type="text" id="drawer-search" class="input" placeholder="输入商品编号或名称搜索…" autocomplete="off">
+    </div>
+    <ul id="drawer-list" class="drawer-list"></ul>
+    <div class="drawer-footer">
+        <button id="drawer-add-product" class="btn btn-ghost" style="width:100%">＋ 新增商品</button>
+    </div>
+</aside>
+
+<script src="js/app.js"></script>
+</body>
+</html>
