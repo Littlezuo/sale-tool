@@ -1,4 +1,3 @@
-
 (function () {
     'use strict';
 
@@ -683,7 +682,7 @@
 
         // 整单备注（客户名称下方）
         if (orderNote) {
-            html += '<div class="r-order-note">销售单备注：' + escapeHtml(orderNote) + '</div>';
+            html += '<div class="r-order-note">备注：' + escapeHtml(orderNote) + '</div>';
         }
 
         // 表格：序号 / 编号 / 商品名称 / 数量 / 单位 / 单价 / 金额 / 备注
@@ -723,13 +722,13 @@
         html += '<div class="r-summary-line r-summary-cap">大写：' + escapeHtml(amountToChinese(total)) + '</div>';
         html += '</div>';
 
-        // 底部落款：地址、联系方式，制单人
+        // 底部落款：第一行 制单人 + 联系方式，第二行 地址
         html += '<div class="r-footer">';
+        html += '<div class="r-footer-row">';
+        html += '<span>制单人：' + escapeHtml(settings.operator || '-') + '</span>';
+        html += '<span>联系电话：' + escapeHtml(settings.phone || '-') + '</span>';
+        html += '</div>';
         html += '<div>地址：' + escapeHtml(settings.address || '-') + '</div>';
-        html += '<div>联系方式：' + escapeHtml(settings.phone || '-') + '</div>';
-        if (settings.operator) {
-            html += '<div>制单人：' + escapeHtml(settings.operator) + '</div>';
-        }
         html += '</div>';
 
         receiptEl.innerHTML = html;
@@ -765,15 +764,12 @@
             return;
         }
         try {
-            const rect = receiptEl.getBoundingClientRect();
             domtoimage.toPng(receiptEl, {
-                width: rect.width,
+                width: receiptEl.scrollWidth,
                 height: receiptEl.scrollHeight,
                 scale: 2,
                 style: {
-                    margin: '0',
-                    padding: '0',
-                    transform: 'none'
+                    margin: '0'
                 }
             }).then((dataUrl) => {
                 const a = document.createElement('a');
