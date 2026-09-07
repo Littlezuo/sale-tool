@@ -117,7 +117,8 @@
     let templates = seedDefaults();
 
     let settings = loadJSON(KEY_SETTINGS, {
-        shop: '', warehouse: '', operator: '', address: '', phone: ''
+        shop: '', warehouse: '', operator: '', address: '', phone: '',
+        payQr: '', payQrShow: false, wechatQr: '', wechatQrShow: false
     });
     let seq = loadJSON(KEY_SEQ, 1);
     let pinned = loadJSON(KEY_PINNED, []);
@@ -212,13 +213,8 @@
 
     // 开单
     const orderTitle = $('#order-title');
-    const btnOpenPicker = $('#btn-open-picker');
-    const drawer = $('#drawer');
-    const drawerMask = $('#drawer-mask');
-    const drawerSearch = $('#drawer-search');
-    const drawerList = $('#drawer-list');
-    const drawerClose = $('#drawer-close');
-    const drawerNewProduct = $('#drawer-new-product');
+    const orderSearch = $('#order-search');
+    const orderSearchResults = $('#order-search-results');
     const orderLinesEl = $('#order-lines');
     const emptyTip = $('#empty-tip');
     const totalAmount = $('#total-amount');
@@ -254,6 +250,14 @@
     const sOperator = $('#s-operator');
     const sAddress = $('#s-address');
     const sPhone = $('#s-phone');
+    const sPayQr = $('#s-pay-qr');
+    const sPayQrPreview = $('#s-pay-qr-preview');
+    const btnRemovePayQr = $('#btn-remove-pay-qr');
+    const sPayQrShow = $('#s-pay-qr-show');
+    const sWechatQr = $('#s-wechat-qr');
+    const sWechatQrPreview = $('#s-wechat-qr-preview');
+    const btnRemoveWechatQr = $('#btn-remove-wechat-qr');
+    const sWechatQrShow = $('#s-wechat-qr-show');
 
     // ===== 导航切换 =====
     function switchView(name) {
@@ -671,109 +675,32 @@
         switchView('view-templates');
     });
 
-    // ===== 开单：选商品抽屉 =====
-    function openDrawer() {
-        drawer.classList.add('open');
-        drawerMask.classList.add('show');
-        drawerSearch.value = '';
-        renderDrawerList();
-        setTimeout(() => drawerSearch.focus(), 200);
-    }
-    function closeDrawer() {
-        drawer.classList.remove('open');
-        drawerMask.classList.remove('show');
-    }
-
-    function renderDrawerList() {
-        const kw = drawerSearch.value.trim().toLowerCase();
+    // ===== 开单：添加商品（内嵌搜索框） =====
+    function renderOrderSearchResults() {
+        const kw = orderSearch.value.trim().toLowerCase();
         const candidates = getProductCandidates();
-        drawerList.innerHTML = '';
+        orderSearchResults.innerHTML = '';
         const list = kw
             ? candidates.filter((n) => n.toLowerCase().includes(kw))
             : candidates;
 
         if (list.length === 0) {
             const li = document.createElement('li');
-            li.className = 'drawer-empty';
-            li.textContent = kw ? '无匹配，可在下方输入新商品' : '暂无候选商品';
-            drawerList.appendChild(li);
-            return;
+            li.className = 'search-noresult';
+            li.textContent = kw ? '没有匹配，回车直接添加新商品' : '暂无候选商品';
+            orderSearchResults.appendChild(li);
+        } else {
+            list.slice(0, 20).forEach((n) => {
+                const li = document.createElement('li');
+                li.className = 'search-item';
+                li.textContent = n;
+                li.addEventListener('click', () => {
+                    addLineByName(n);
+                });
+                orderSearchResults.appendChild(li);
+            });
         }
-
-        list.forEach((name) => {
-            const li = document.createElement('li');
-            li.className = 'drawer-item';
-
-            const info = document.createElement('div');
-            info.className = 'drawer-item-info';
-            info.innerHTML = '<div class="drawer-item-name">' + escapeHtml(name) + '</div>';
-
-            // 是否已在明细中
-            const existing = orderLines.find((l) => l.name === name);
-
-            if (!existing) {
-                const addBtn = document.createElement('button');
-                addBtn.type = 'button';
-                addBtn.className = 'qty-btn qty-btn-add';
-                addBtn.textContent = '＋';
-                addBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    addLineByName(name);
-                });
-                li.appendChild(info);
-                li.appendChild(addBtn);
-            } else {
-                const qtyBox = document.createElement('div');
-                qtyBox.className = 'qty-box qty-box-sm';
-
-                const minusBtn = document.createElement('button');
-                minusBtn.type = 'button';
-                minusBtn.className = 'qty-btn';
-                minusBtn.textContent = '−';
-                minusBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (existing.qty <= 1) {
-                        removeLine(existing.id);
-                    } else {
-                        existing.qty -= 1;
-                        renderOrderLines();
-                        renderDrawerList();
-                    }
-                });
-
-                const qtyInput = document.createElement('input');
-                qtyInput.type = 'number';
-                qtyInput.className = 'qty-input';
-                qtyInput.value = existing.qty;
-                qtyInput.min = '1';
-                qtyInput.step = '1';
-                qtyInput.inputMode = 'numeric';
-                qtyInput.addEventListener('click', (e) => e.stopPropagation());
-                qtyInput.addEventListener('input', () => {
-                    const v = parseInt(qtyInput.value, 10);
-                    existing.qty = isNaN(v) || v <= 0 ? 1 : v;
-                    renderOrderLines();
-                });
-
-                const plusBtn = document.createElement('button');
-                plusBtn.type = 'button';
-                plusBtn.className = 'qty-btn';
-                plusBtn.textContent = '＋';
-                plusBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    existing.qty += 1;
-                    renderOrderLines();
-                    qtyInput.value = existing.qty;
-                });
-
-                qtyBox.appendChild(minusBtn);
-                qtyBox.appendChild(qtyInput);
-                qtyBox.appendChild(plusBtn);
-                li.appendChild(info);
-                li.appendChild(qtyBox);
-            }
-            drawerList.appendChild(li);
-        });
+        orderSearchResults.classList.remove('hidden');
     }
 
     function addLineByName(name) {
@@ -793,13 +720,13 @@
             });
         }
         renderOrderLines();
-        if (drawer.classList.contains('open')) renderDrawerList();
+        orderSearch.value = '';
+        orderSearchResults.classList.add('hidden');
     }
 
     function removeLine(id) {
         orderLines = orderLines.filter((l) => l.id !== id);
         renderOrderLines();
-        if (drawer.classList.contains('open')) renderDrawerList();
     }
 
     function escapeHtml(s) {
@@ -808,17 +735,16 @@
         }[c]));
     }
 
-    btnOpenPicker.addEventListener('click', openDrawer);
-    drawerClose.addEventListener('click', closeDrawer);
-    drawerMask.addEventListener('click', closeDrawer);
-    drawerSearch.addEventListener('input', renderDrawerList);
-    drawerNewProduct.addEventListener('keydown', (e) => {
+    orderSearch.addEventListener('input', renderOrderSearchResults);
+    orderSearch.addEventListener('focus', renderOrderSearchResults);
+    orderSearch.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            addLineByName(drawerNewProduct.value);
-            drawerNewProduct.value = '';
-            renderDrawerList();
+            addLineByName(orderSearch.value);
         }
+    });
+    orderSearch.addEventListener('blur', () => {
+        setTimeout(() => orderSearchResults.classList.add('hidden'), 150);
     });
 
     // ===== 开单：明细渲染 =====
@@ -829,6 +755,7 @@
         orderLines.forEach((line) => {
             const row = document.createElement('div');
             row.className = 'line-row';
+            row.setAttribute('data-line-id', line.id);
 
             // 第一行：名称 + 金额 + 删除
             const topRow = document.createElement('div');
@@ -920,7 +847,7 @@
             priceLabel.textContent = '单价';
             const priceInput = document.createElement('input');
             priceInput.type = 'number';
-            priceInput.className = 'input';
+            priceInput.className = 'input price-input';
             priceInput.value = line.price != null && line.price !== '' ? line.price : '';
             priceInput.placeholder = '0.00';
             priceInput.min = '0';
@@ -928,6 +855,7 @@
             priceInput.inputMode = 'decimal';
             priceInput.addEventListener('input', () => {
                 line.price = priceInput.value;
+                row.classList.remove('line-error');
                 const amt = row.querySelector('.line-amount');
                 if (amt) amt.textContent = '¥' + fmtMoney((Number(line.price) || 0) * line.qty);
                 updateTotal();
@@ -1060,6 +988,16 @@
         html += '<div>地址：' + escapeHtml(settings.address || '-') + '</div>';
         html += '</div>';
 
+        // 收款码（不带文字标签，直接显示图片）
+        const payQr = settings.payQrShow && settings.payQr ? settings.payQr : '';
+        const wechatQr = settings.wechatQrShow && settings.wechatQr ? settings.wechatQr : '';
+        if (payQr || wechatQr) {
+            html += '<div class="r-qrcodes">';
+            if (payQr) html += '<img class="r-qr-img" src="' + payQr + '" alt="">';
+            if (wechatQr) html += '<img class="r-qr-img" src="' + wechatQr + '" alt="">';
+            html += '</div>';
+        }
+
         receiptEl.innerHTML = html;
     }
 
@@ -1075,10 +1013,41 @@
         renderOrderLines();
     });
 
+    // ===== 保存图片：校验价格 =====
+    function validatePrices() {
+        // 找出未填写价格的商品行，标红并返回是否全部通过
+        let firstInvalidRow = null;
+        let invalidCount = 0;
+        orderLines.forEach((line) => {
+            const price = line.price;
+            const empty = price == null || price === '' || Number.isNaN(Number(price));
+            const rowEl = orderLinesEl.querySelector('[data-line-id="' + line.id + '"]');
+            if (empty) {
+                invalidCount++;
+                if (rowEl) {
+                    rowEl.classList.add('line-error');
+                    if (!firstInvalidRow) firstInvalidRow = rowEl;
+                }
+            } else if (rowEl) {
+                rowEl.classList.remove('line-error');
+            }
+        });
+        return { ok: invalidCount === 0, firstInvalidRow, count: invalidCount };
+    }
+
     // ===== 导出图片 =====
     btnExport.addEventListener('click', () => {
         if (orderLines.length === 0) {
             alert('请先添加商品');
+            return;
+        }
+        // 价格校验：有未填价格的商品则标红并滚动到第一个错误处
+        const v = validatePrices();
+        if (!v.ok) {
+            alert('有 ' + v.count + ' 个商品未填写价格，请补充价格或删除该商品');
+            if (v.firstInvalidRow) {
+                v.firstInvalidRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
         try {
@@ -1108,17 +1077,55 @@
         sOperator.value = settings.operator || '';
         sAddress.value = settings.address || '';
         sPhone.value = settings.phone || '';
+        sPayQrShow.checked = !!settings.payQrShow;
+        sWechatQrShow.checked = !!settings.wechatQrShow;
+        renderQrPreview(sPayQr, sPayQrPreview, btnRemovePayQr, settings.payQr);
+        renderQrPreview(sWechatQr, sWechatQrPreview, btnRemoveWechatQr, settings.wechatQr);
     }
+
+    // 渲染收款码预览
+    function renderQrPreview(fileInput, imgEl, removeBtn, dataUrl) {
+        fileInput.value = '';
+        if (dataUrl) {
+            imgEl.src = dataUrl;
+            imgEl.style.display = 'block';
+            removeBtn.style.display = 'inline-block';
+        } else {
+            imgEl.removeAttribute('src');
+            imgEl.style.display = 'none';
+            removeBtn.style.display = 'none';
+        }
+    }
+
+    // 读取图片文件并回填到 settings 字段
+    function bindQrUpload(fileInput, imgEl, removeBtn, key) {
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                settings[key] = reader.result;
+                renderQrPreview(fileInput, imgEl, removeBtn, settings[key]);
+            };
+            reader.readAsDataURL(file);
+        });
+        removeBtn.addEventListener('click', () => {
+            settings[key] = '';
+            renderQrPreview(fileInput, imgEl, removeBtn, '');
+        });
+    }
+    bindQrUpload(sPayQr, sPayQrPreview, btnRemovePayQr, 'payQr');
+    bindQrUpload(sWechatQr, sWechatQrPreview, btnRemoveWechatQr, 'wechatQr');
 
     settingsForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        settings = {
-            shop: sShop.value.trim(),
-            warehouse: sWarehouse.value.trim(),
-            operator: sOperator.value.trim(),
-            address: sAddress.value.trim(),
-            phone: sPhone.value.trim(),
-        };
+        settings.shop = sShop.value.trim();
+        settings.warehouse = sWarehouse.value.trim();
+        settings.operator = sOperator.value.trim();
+        settings.address = sAddress.value.trim();
+        settings.phone = sPhone.value.trim();
+        settings.payQrShow = sPayQrShow.checked;
+        settings.wechatQrShow = sWechatQrShow.checked;
         saveJSON(KEY_SETTINGS, settings);
         alert('配置已保存');
     });
