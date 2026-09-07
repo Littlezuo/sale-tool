@@ -124,7 +124,7 @@
 
     let settings = loadJSON(KEY_SETTINGS, {
         shop: '', warehouse: '', operator: '', address: '', phone: '',
-        payQr: '', payQrShow: false, wechatQr: '', wechatQrShow: false
+        payQr: '', wechatQr: ''
     });
     let seq = loadJSON(KEY_SEQ, 1);
     let pinned = loadJSON(KEY_PINNED, []);
@@ -259,11 +259,9 @@
     const sPayQr = $('#s-pay-qr');
     const sPayQrPreview = $('#s-pay-qr-preview');
     const btnRemovePayQr = $('#btn-remove-pay-qr');
-    const sPayQrShow = $('#s-pay-qr-show');
     const sWechatQr = $('#s-wechat-qr');
     const sWechatQrPreview = $('#s-wechat-qr-preview');
     const btnRemoveWechatQr = $('#btn-remove-wechat-qr');
-    const sWechatQrShow = $('#s-wechat-qr-show');
 
     // ===== 导航切换 =====
     function switchView(name) {
@@ -994,9 +992,9 @@
         html += '<div>地址：' + escapeHtml(settings.address || '-') + '</div>';
         html += '</div>';
 
-        // 收款码（不带文字标签，直接显示图片）
-        const payQr = settings.payQrShow && settings.payQr ? settings.payQr : '';
-        const wechatQr = settings.wechatQrShow && settings.wechatQr ? settings.wechatQr : '';
+        // 收款码（不带文字标签，直接显示图片；上传即显示）
+        const payQr = settings.payQr ? settings.payQr : '';
+        const wechatQr = settings.wechatQr ? settings.wechatQr : '';
         if (payQr || wechatQr) {
             html += '<div class="r-qrcodes">';
             if (payQr) html += '<img class="r-qr-img" src="' + payQr + '" alt="">';
@@ -1083,8 +1081,6 @@
         sOperator.value = settings.operator || '';
         sAddress.value = settings.address || '';
         sPhone.value = settings.phone || '';
-        sPayQrShow.checked = !!settings.payQrShow;
-        sWechatQrShow.checked = !!settings.wechatQrShow;
         renderQrPreview(sPayQr, sPayQrPreview, btnRemovePayQr, settings.payQr);
         renderQrPreview(sWechatQr, sWechatQrPreview, btnRemoveWechatQr, settings.wechatQr);
     }
@@ -1092,6 +1088,9 @@
     // 渲染收款码预览
     function renderQrPreview(fileInput, imgEl, removeBtn, dataUrl) {
         fileInput.value = '';
+        // 更新上传按钮文字
+        const btnSpan = fileInput.parentElement && fileInput.parentElement.querySelector('span');
+        if (btnSpan) btnSpan.textContent = dataUrl ? '重新上传收款码图片' : '上传收款码图片';
         if (dataUrl) {
             imgEl.src = dataUrl;
             imgEl.style.display = 'block';
@@ -1165,8 +1164,6 @@
         settings.operator = sOperator.value.trim();
         settings.address = sAddress.value.trim();
         settings.phone = sPhone.value.trim();
-        settings.payQrShow = sPayQrShow.checked;
-        settings.wechatQrShow = sWechatQrShow.checked;
         saveJSON(KEY_SETTINGS, settings);
         alert('配置已保存');
     });
