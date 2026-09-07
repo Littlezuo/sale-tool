@@ -526,13 +526,25 @@ body {
     display: block;
 }
 
-/* 店铺配置：收款码上传预览与勾选 */
-.file-input { padding: 8px; max-width: 100%; box-sizing: border-box; }
-.file-input::file-selector-button {
-    max-width: 100%;
+/* 店铺配置：收款码上传按钮与预览 */
+.upload-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.upload-btn:hover { background: var(--primary-dark); }
+.upload-btn input {
+    display: none; /* 隐藏原生 file input，去掉“未选择文件”与难看外框 */
 }
 .qr-preview {
-    margin-top: 8px;
+    margin-top: 10px;
     width: 160px;
     height: 160px;
     max-width: 100%;
@@ -540,21 +552,7 @@ body {
     border: 1px solid var(--border);
     border-radius: 8px;
     background: #fff;
-}
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    font-size: 14px;
-    color: var(--text);
-    cursor: pointer;
-}
-.checkbox-label input {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    cursor: pointer;
+    display: block;
 }
 
 /* 手机端：收款码上传预览自适应宽度 */
@@ -563,10 +561,6 @@ body {
         width: 100%;
         height: auto;
         max-height: 260px;
-    }
-    .checkbox-label {
-        flex-wrap: wrap;
-        align-items: flex-start;
     }
 }
 
