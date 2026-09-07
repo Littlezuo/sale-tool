@@ -210,6 +210,15 @@ body {
     border-bottom: 1px solid #f0f1f3;
 }
 .line-row:last-child { border-bottom: none; }
+.line-row.line-error {
+    background: #fff5f5;
+    outline: 2px solid var(--danger);
+    outline-offset: -2px;
+}
+.line-row.line-error .price-input {
+    border-color: var(--danger);
+    background: #fff0f0;
+}
 
 .line-top {
     display: flex;
@@ -495,6 +504,70 @@ body {
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+/* 收款码 */
+.r-qrcodes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed #ccc;
+}
+.r-qr-img {
+    width: 190px;
+    height: 190px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid #e3e5e8;
+    border-radius: 6px;
+    display: block;
+}
+
+/* 店铺配置：收款码上传预览与勾选 */
+.file-input { padding: 8px; max-width: 100%; box-sizing: border-box; }
+.file-input::file-selector-button {
+    max-width: 100%;
+}
+.qr-preview {
+    margin-top: 8px;
+    width: 160px;
+    height: 160px;
+    max-width: 100%;
+    object-fit: contain;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+}
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+}
+.checkbox-label input {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+/* 手机端：收款码上传预览自适应宽度 */
+@media (max-width: 799px) {
+    .qr-preview {
+        width: 100%;
+        height: auto;
+        max-height: 260px;
+    }
+    .checkbox-label {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
 }
 
 @media print {
