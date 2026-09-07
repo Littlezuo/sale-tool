@@ -74,13 +74,13 @@
                             <input type="text" id="order-note" class="input" placeholder="选填">
                         </div>
 
-                        <!-- 选择商品入口 -->
+                        <!-- 添加商品：内嵌搜索框 -->
                         <div class="form-row">
-                            <label class="form-label">选择商品</label>
-                            <button type="button" id="btn-open-picker" class="input picker-trigger">
-                                <span class="picker-trigger-text">点击选择商品</span>
-                                <span class="picker-trigger-arrow">›</span>
-                            </button>
+                            <label class="form-label" for="order-search">添加商品</label>
+                            <div class="search-box">
+                                <input type="text" id="order-search" class="input" placeholder="输入商品名称，可下拉选择或回车直接添加…" autocomplete="off">
+                                <ul id="order-search-results" class="search-results hidden"></ul>
+                            </div>
                         </div>
 
                         <!-- 明细列表 -->
@@ -186,6 +186,29 @@
                         <label class="form-label" for="s-phone">联系电话</label>
                         <input type="text" id="s-phone" class="input">
                     </div>
+
+                    <!-- 收款码（微信/支付宝/其他） -->
+                    <div class="form-row">
+                        <label class="form-label">收款码（微信/支付宝/其他）</label>
+                        <input type="file" id="s-pay-qr" class="input file-input" accept="image/*">
+                        <img id="s-pay-qr-preview" class="qr-preview" alt="" style="display:none;">
+                        <button type="button" id="btn-remove-pay-qr" class="btn btn-ghost btn-sm" style="display:none;margin-top:6px;">移除图片</button>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="s-pay-qr-show"> 在开单票据中显示
+                        </label>
+                    </div>
+
+                    <!-- 收款码（备用） -->
+                    <div class="form-row">
+                        <label class="form-label">收款码（备用）</label>
+                        <input type="file" id="s-wechat-qr" class="input file-input" accept="image/*">
+                        <img id="s-wechat-qr-preview" class="qr-preview" alt="" style="display:none;">
+                        <button type="button" id="btn-remove-wechat-qr" class="btn btn-ghost btn-sm" style="display:none;margin-top:6px;">移除图片</button>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="s-wechat-qr-show"> 在开单票据中显示
+                        </label>
+                    </div>
+
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">保存配置</button>
                     </div>
@@ -207,22 +230,6 @@
         <li class="menu-item" data-view="view-templates">📦 模板管理</li>
         <li class="menu-item" data-view="view-settings">⚙️ 店铺配置</li>
     </ul>
-</aside>
-
-<!-- 选商品抽屉 -->
-<div class="drawer-mask" id="drawer-mask"></div>
-<aside class="drawer" id="drawer">
-    <div class="drawer-header">
-        <span class="drawer-title">选择商品</span>
-        <button class="drawer-close" id="drawer-close">✕</button>
-    </div>
-    <div class="drawer-search">
-        <input type="text" id="drawer-search" class="input" placeholder="输入商品名称…" autocomplete="off">
-    </div>
-    <ul id="drawer-list" class="drawer-list"></ul>
-    <div class="drawer-footer">
-        <input type="text" id="drawer-new-product" class="input" placeholder="输入新商品名称并回车添加">
-    </div>
 </aside>
 
 <!-- 选择模板抽屉 -->
