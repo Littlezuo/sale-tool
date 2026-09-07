@@ -21,7 +21,13 @@
     }
 
     function saveJSON(key, data) {
-        localStorage.setItem(key, JSON.stringify(data));
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (e) {
+            alert('保存失败：图片过大超出浏览器本地存储限制，请使用更小的收款码图片');
+            return false;
+        }
     }
 
     function genId() {
@@ -1097,17 +1103,52 @@
         }
     }
 
+    // 读取图片文件，压缩后转 dataURL（避免 localStorage 超限 & 移动端渲染问题）
+    function compressImage(file, maxEdge, quality, cb) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                let w = img.naturalWidth || img.width;
+                let h = img.naturalHeight || img.height;
+                const scale = Math.min(1, maxEdge / Math.max(w, h));
+                w = Math.round(w * scale);
+                h = Math.round(h * scale);
+                const canvas = document.createElement('canvas');
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                let out = canvas.toDataURL('image/jpeg', quality);
+                // 若 jpeg 反而更大（如透明 PNG），退回 png
+                if (!out || out.length < 10) {
+                    out = canvas.toDataURL('image/png');
+                }
+                cb(out);
+            };
+            img.onerror = () => {
+                // 图片解码失败，退回原始 dataURL
+                cb(reader.result);
+            };
+            img.src = reader.result;
+        };
+        reader.onerror = () => {
+            alert('图片读取失败，请重试');
+        };
+        reader.readAsDataURL(file);
+    }
+
     // 读取图片文件并回填到 settings 字段
     function bindQrUpload(fileInput, imgEl, removeBtn, key) {
         fileInput.addEventListener('change', () => {
             const file = fileInput.files && fileInput.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                settings[key] = reader.result;
+            compressImage(file, 800, 0.85, (dataUrl) => {
+                settings[key] = dataUrl;
                 renderQrPreview(fileInput, imgEl, removeBtn, settings[key]);
-            };
-            reader.readAsDataURL(file);
+            });
         });
         removeBtn.addEventListener('click', () => {
             settings[key] = '';
