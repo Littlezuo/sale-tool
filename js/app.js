@@ -36,7 +36,15 @@
 
     function fmtMoney(n) {
         const v = Number(n) || 0;
-        return v.toFixed(2);
+        // 基于到分的整数四舍五入，避免 0.005 边界与浮点误差
+        return (Math.round((v + Number.EPSILON) * 100) / 100).toFixed(2);
+    }
+
+    // 将任意金额（数字或数字字符串）安全换算为「分」的整数
+    function toCents(n) {
+        const v = Number(n);
+        if (!isFinite(v)) return 0;
+        return Math.round((v + Number.EPSILON) * 100);
     }
 
     function fmtDateOnly(d) {
@@ -46,14 +54,15 @@
 
     // 数字转中文大写金额
     function amountToChinese(n) {
-        const num = Math.round((Number(n) || 0) * 100) / 100;
-        if (num === 0) return '零元整';
+        // 以「分」为整数安全换算，避免浮点误差（如 0.29*100=28.999...）
+        const cents = Math.round(toCents(n));
+        if (cents <= 0) return '零元整';
         const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖'];
         const radices = ['', '拾', '佰', '仟'];
         const bigRadices = ['', '万', '亿', '兆'];
 
-        const intPart = Math.floor(num);
-        const decimals = Math.round((num - intPart) * 100);
+        const intPart = Math.floor(cents / 100);
+        const decimals = cents % 100;
 
         let zeroCount = 0;
         let result = '';
@@ -85,7 +94,6 @@
         } else {
             const jiao = Math.floor(decimals / 10);
             const fen = decimals % 10;
-            if (intPart === 0 && jiao === 0) { /* 纯分，如 0.05，前面不需要“零元”特判 */ }
             if (jiao > 0) result += digits[jiao] + '角';
             else if (intPart > 0) result += '零';
             if (fen > 0) result += digits[fen] + '分';
@@ -229,6 +237,13 @@
     const btnExport = $('#btn-export');
     const customerNameInput = $('#customer-name');
     const orderNoteInput = $('#order-note');
+
+    // 保存图片异常商品确认弹窗
+    const orderIncompleteMask = $('#order-incomplete-mask');
+    const orderIncompleteBody = $('#order-incomplete-body');
+    const btnOrderIncompleteCancel = $('#btn-order-incomplete-cancel');
+    const btnOrderIncompleteClear = $('#btn-order-incomplete-clear');
+    const btnClearInvalid = $('#btn-clear-invalid');
 
     // 模板管理
     const templateList = $('#template-list');
@@ -584,7 +599,8 @@
             priceInput.value = it.price || '';
             priceInput.placeholder = '价格(选填)';
             priceInput.min = '0';
-            priceInput.step = '0.01';
+            priceInput.step = 'any';
+            priceInput.inputMode = 'decimal';
             priceInput.addEventListener('input', () => {
                 it.price = priceInput.value;
             });
@@ -776,7 +792,7 @@
             right.className = 'line-right';
             const amount = document.createElement('div');
             amount.className = 'line-amount';
-            amount.textContent = '¥' + fmtMoney((Number(line.price) || 0) * line.qty);
+            amount.textContent = '¥' + fmtMoney(toCents(line.price) * (Number(line.qty) || 0) / 100);
             const del = document.createElement('button');
             del.className = 'line-del';
             del.innerHTML = '&times;';
@@ -805,28 +821,28 @@
             minusBtn.className = 'qty-btn';
             minusBtn.textContent = '−';
             minusBtn.addEventListener('click', () => {
-                const v = (parseInt(qtyInput.value, 10) || 1) - 1;
+                const v = (parseFloat(qtyInput.value) || 1) - 1;
                 line.qty = v <= 0 ? 1 : v;
                 renderOrderLines();
             });
             const qtyInput = document.createElement('input');
             qtyInput.type = 'number';
             qtyInput.className = 'input qty-input';
-            qtyInput.min = '1';
-            qtyInput.step = '1';
+            qtyInput.min = '0';
+            qtyInput.step = 'any';
             qtyInput.value = line.qty;
-            qtyInput.inputMode = 'numeric';
+            qtyInput.inputMode = 'decimal';
             qtyInput.addEventListener('input', () => {
-                const v = parseInt(qtyInput.value, 10);
-                line.qty = isNaN(v) || v <= 0 ? 1 : v;
+                const v = parseFloat(qtyInput.value);
+                line.qty = isNaN(v) || v <= 0 ? 0 : v;
                 const amt = row.querySelector('.line-amount');
-                if (amt) amt.textContent = '¥' + fmtMoney((Number(line.price) || 0) * line.qty);
+                if (amt) amt.textContent = '¥' + fmtMoney(toCents(line.price) * (Number(line.qty) || 0) / 100);
                 updateTotal();
                 renderReceipt();
             });
             qtyInput.addEventListener('blur', () => {
-                const v = parseInt(qtyInput.value, 10);
-                line.qty = isNaN(v) || v <= 0 ? 1 : v;
+                const v = parseFloat(qtyInput.value);
+                line.qty = isNaN(v) || v <= 0 ? 0 : v;
                 renderOrderLines();
             });
             const plusBtn = document.createElement('button');
@@ -834,7 +850,7 @@
             plusBtn.className = 'qty-btn';
             plusBtn.textContent = '＋';
             plusBtn.addEventListener('click', () => {
-                const v = (parseInt(qtyInput.value, 10) || 1) + 1;
+                const v = (parseFloat(qtyInput.value) || 1) + 1;
                 line.qty = v;
                 renderOrderLines();
             });
@@ -855,13 +871,13 @@
             priceInput.value = line.price != null && line.price !== '' ? line.price : '';
             priceInput.placeholder = '0.00';
             priceInput.min = '0';
-            priceInput.step = '0.01';
+            priceInput.step = 'any';
             priceInput.inputMode = 'decimal';
             priceInput.addEventListener('input', () => {
                 line.price = priceInput.value;
                 row.classList.remove('line-error');
                 const amt = row.querySelector('.line-amount');
-                if (amt) amt.textContent = '¥' + fmtMoney((Number(line.price) || 0) * line.qty);
+                if (amt) amt.textContent = '¥' + fmtMoney(toCents(line.price) * (Number(line.qty) || 0) / 100);
                 updateTotal();
                 renderReceipt();
             });
@@ -899,7 +915,9 @@
 
     // ===== 开单：合计 & 票据 =====
     function calcTotal() {
-        return orderLines.reduce((sum, l) => sum + (Number(l.price) || 0) * (Number(l.qty) || 0), 0);
+        // 以「分」整数累加，避免浮点误差
+        const cents = orderLines.reduce((sum, l) => sum + toCents(l.price) * (Number(l.qty) || 0), 0);
+        return cents / 100;
     }
     function updateTotal() {
         totalAmount.textContent = '¥' + fmtMoney(calcTotal());
@@ -972,7 +990,7 @@
                     '<td class="r-qty">' + l.qty + '</td>' +
                     '<td class="r-unit">' + escapeHtml(l.unit || '') + '</td>' +
                     '<td class="r-price">' + (l.price !== '' && l.price != null ? fmtMoney(l.price) : '') + '</td>' +
-                    '<td class="r-subtotal">' + fmtMoney((Number(l.price) || 0) * l.qty) + '</td>' +
+                    '<td class="r-subtotal">' + fmtMoney(toCents(l.price) * (Number(l.qty) || 0) / 100) + '</td>' +
                     '<td class="r-note-col">' + escapeHtml(l.note || '') + '</td>' +
                     '</tr>';
             });
@@ -1017,26 +1035,57 @@
         renderOrderLines();
     });
 
-    // ===== 保存图片：校验价格 =====
-    function validatePrices() {
-        // 找出未填写价格的商品行，标红并返回是否全部通过
-        let firstInvalidRow = null;
-        let invalidCount = 0;
+    // ===== 保存图片：校验商品 =====
+    // 判断某行是否「不完整」：名称或价格任一为空
+    function isLineIncomplete(line) {
+        const nameEmpty = !(line.name || '').trim();
+        const price = line.price;
+        const priceEmpty = price == null || price === '' || Number.isNaN(Number(price));
+        return nameEmpty || priceEmpty;
+    }
+
+    // 找出所有「名称或价格为空」的商品行，返回 [{line, rowEl}]
+    function findInvalidLines() {
+        const result = [];
         orderLines.forEach((line) => {
-            const price = line.price;
-            const empty = price == null || price === '' || Number.isNaN(Number(price));
-            const rowEl = orderLinesEl.querySelector('[data-line-id="' + line.id + '"]');
-            if (empty) {
-                invalidCount++;
-                if (rowEl) {
-                    rowEl.classList.add('line-error');
-                    if (!firstInvalidRow) firstInvalidRow = rowEl;
-                }
-            } else if (rowEl) {
-                rowEl.classList.remove('line-error');
+            if (isLineIncomplete(line)) {
+                const rowEl = orderLinesEl.querySelector('[data-line-id="' + line.id + '"]');
+                result.push({ line, rowEl });
             }
         });
-        return { ok: invalidCount === 0, firstInvalidRow, count: invalidCount };
+        return result;
+    }
+
+    // 标红名称或价格未填写完整的商品行
+    function markInvalidLines() {
+        orderLines.forEach((line) => {
+            const rowEl = orderLinesEl.querySelector('[data-line-id="' + line.id + '"]');
+            if (rowEl) {
+                if (isLineIncomplete(line)) {
+                    rowEl.classList.add('line-error');
+                } else {
+                    rowEl.classList.remove('line-error');
+                }
+            }
+        });
+    }
+
+    // 真正导出图片
+    function doExport() {
+        domtoimage.toPng(receiptEl, {
+            width: receiptEl.scrollWidth,
+            height: receiptEl.scrollHeight,
+            scale: 2,
+            style: { margin: '0' }
+        }).then((dataUrl) => {
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = '开单_' + currentOrderNo + '.png';
+            a.click();
+        }).catch((err) => {
+            console.error(err);
+            alert('导出图片失败，请重试');
+        });
     }
 
     // ===== 导出图片 =====
@@ -1045,33 +1094,63 @@
             alert('请先添加商品');
             return;
         }
-        // 价格校验：有未填价格的商品则标红并滚动到第一个错误处
-        const v = validatePrices();
-        if (!v.ok) {
-            alert('有 ' + v.count + ' 个商品未填写价格，请补充价格或删除该商品');
-            if (v.firstInvalidRow) {
-                v.firstInvalidRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+
+        const invalid = findInvalidLines();
+        if (invalid.length > 0) {
+            // 有未填写完整的商品：标红 + 弹窗
+            markInvalidLines();
+            orderIncompleteBody.textContent =
+                '有 ' + invalid.length + ' 个商品未填写完整（名称或价格为空）。「一键清除并保存」将删除这些商品后保存图片；' +
+                '「取消」则标红提示，可返回补填或删除。';
+            orderIncompleteMask.classList.add('show');
             return;
         }
+
         try {
-            domtoimage.toPng(receiptEl, {
-                width: receiptEl.scrollWidth,
-                height: receiptEl.scrollHeight,
-                scale: 2,
-                style: { margin: '0' }
-            }).then((dataUrl) => {
-                const a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = '开单_' + currentOrderNo + '.png';
-                a.click();
-            }).catch((err) => {
-                console.error(err);
-                alert('导出图片失败，请重试');
-            });
+            doExport();
         } catch (e) {
             alert('导出失败，请确认已正确引入 dom-to-image 库');
         }
+    });
+
+    // 弹窗：一键清除并保存
+    btnOrderIncompleteClear.addEventListener('click', () => {
+        orderIncompleteMask.classList.remove('show');
+        orderLines = orderLines.filter((line) => !isLineIncomplete(line));
+        renderOrderLines();
+        try {
+            doExport();
+        } catch (e) {
+            alert('导出失败，请确认已正确引入 dom-to-image 库');
+        }
+    });
+
+    // 弹窗：取消（停留在开单页，异常商品已标红）
+    btnOrderIncompleteCancel.addEventListener('click', () => {
+        orderIncompleteMask.classList.remove('show');
+        // 滚动到第一个异常行
+        const invalid = findInvalidLines();
+        if (invalid.length > 0 && invalid[0].rowEl) {
+            invalid[0].rowEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+
+    // 点击遮罩取消
+    orderIncompleteMask.addEventListener('click', (e) => {
+        if (e.target === orderIncompleteMask) orderIncompleteMask.classList.remove('show');
+    });
+
+    // 常驻按钮：一键清除无效商品（不导出，仅删除）
+    btnClearInvalid.addEventListener('click', () => {
+        const before = orderLines.length;
+        orderLines = orderLines.filter((line) => !isLineIncomplete(line));
+        const removed = before - orderLines.length;
+        if (removed === 0) {
+            alert('没有无效商品需要清除');
+            return;
+        }
+        renderOrderLines();
+        alert('已清除 ' + removed + ' 个无效商品');
     });
 
     // ===== 店铺配置 =====
