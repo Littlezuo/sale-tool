@@ -21,8 +21,6 @@
         <!-- 视图：入口选择（模板快捷开单） -->
         <section id="view-home" class="view active">
             <div class="home-wrap">
-                <h1 class="home-title">开单工具</h1>
-
                 <!-- 搜索 -->
                 <div class="home-search">
                     <input type="text" id="home-search" class="input" placeholder="搜索模板…" autocomplete="off">
@@ -106,6 +104,7 @@
                     <div class="panel">
                         <div class="preview-toolbar">
                             <h2 class="panel-title">票据预览</h2>
+                            <button id="btn-clear-invalid" class="btn btn-ghost" type="button">一键清除无效商品</button>
                             <button id="btn-export" class="btn btn-primary">保存为图片</button>
                         </div>
                         <div class="receipt-scroll">
@@ -241,6 +240,18 @@
     </div>
     <ul id="tpl-select-list" class="drawer-list"></ul>
 </aside>
+
+<!-- 保存图片异常商品确认弹窗 -->
+<div class="modal-mask" id="order-incomplete-mask">
+    <div class="modal">
+        <div class="modal-title">存在未填写价格的商品</div>
+        <div class="modal-body" id="order-incomplete-body"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" id="btn-order-incomplete-cancel" type="button">取消</button>
+            <button class="btn btn-primary" id="btn-order-incomplete-clear" type="button">一键清除并保存</button>
+        </div>
+    </div>
+</div>
 
 <script src="js/app.js"></script>
 </body>
