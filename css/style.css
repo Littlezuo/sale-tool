@@ -342,6 +342,9 @@ body {
     gap: 10px;
     flex-wrap: wrap;
 }
+.preview-toolbar .panel-title {
+    margin-right: auto;
+}
 .receipt {
     background: #fff;
     border: 1px solid var(--border);
@@ -731,13 +734,6 @@ body {
     max-width: 720px;
     margin: 0 auto;
 }
-.home-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin: 0 0 16px;
-    text-align: center;
-    letter-spacing: 2px;
-}
 .home-search { margin-bottom: 16px; }
 
 .home-section { margin-bottom: 18px; }
@@ -845,3 +841,43 @@ body {
     cursor: pointer;
 }
 #tpl-drawer .drawer-item:active { background: #f5f8ff; }
+
+/* ===== 保存图片异常商品确认弹窗 ===== */
+.modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+}
+.modal-mask.show { opacity: 1; pointer-events: auto; }
+.modal {
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 340px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.18);
+}
+.modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.modal-body {
+    color: var(--text-muted);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
