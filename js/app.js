@@ -584,6 +584,11 @@
             const row = document.createElement('div');
             row.className = 'tpl-item-row';
 
+            const handle = document.createElement('div');
+            handle.className = 'drag-handle';
+            handle.setAttribute('aria-label', '拖拽排序');
+            handle.textContent = '⋮⋮';
+
             const nameInput = document.createElement('input');
             nameInput.type = 'text';
             nameInput.className = 'input tpl-item-name-input';
@@ -613,11 +618,58 @@
                 renderTplItems();
             });
 
+            row.appendChild(handle);
             row.appendChild(nameInput);
             row.appendChild(priceInput);
             row.appendChild(del);
             tplItemsEl.appendChild(row);
         });
+        initTplItemsSortable();
+    }
+
+    // ===== 拖拽排序（SortableJS） =====
+    // 记录已初始化的 Sortable 实例，便于销毁后重建
+    const sortableInstances = new Map();
+
+    function destroySortable(el) {
+        if (sortableInstances.has(el)) {
+            sortableInstances.get(el).destroy();
+            sortableInstances.delete(el);
+        }
+    }
+
+    // 初始化开单明细列表拖拽
+    function initOrderLinesSortable() {
+        destroySortable(orderLinesEl);
+        sortableInstances.set(orderLinesEl, new Sortable(orderLinesEl, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: () => {
+                // 按 DOM 顺序回写 orderLines
+                const order = Array.from(orderLinesEl.children).map((el) => el.getAttribute('data-line-id'));
+                orderLines.sort((a, b) => order.indexOf(String(a.id)) - order.indexOf(String(b.id)));
+                updateTotal();
+                renderReceipt();
+            },
+        }));
+    }
+
+    // 初始化模板商品列表拖拽
+    function initTplItemsSortable() {
+        destroySortable(tplItemsEl);
+        sortableInstances.set(tplItemsEl, new Sortable(tplItemsEl, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: () => {
+                // 按 DOM 顺序回写 tplItems
+                const nameOrder = Array.from(tplItemsEl.querySelectorAll('.tpl-item-name-input')).map((i) => i.value);
+                tplItems.sort((a, b) => nameOrder.indexOf(a.name) - nameOrder.indexOf(b.name));
+            },
+        }));
     }
 
     // 模板添加商品：搜索下拉
@@ -777,9 +829,14 @@
             row.className = 'line-row';
             row.setAttribute('data-line-id', line.id);
 
-            // 第一行：名称 + 金额 + 删除
+            // 第一行：拖拽手柄 + 名称 + 金额 + 删除
             const topRow = document.createElement('div');
             topRow.className = 'line-top';
+
+            const handle = document.createElement('div');
+            handle.className = 'drag-handle';
+            handle.setAttribute('aria-label', '拖拽排序');
+            handle.textContent = '⋮⋮';
 
             const info = document.createElement('div');
             info.className = 'line-info';
@@ -801,6 +858,7 @@
             right.appendChild(amount);
             right.appendChild(del);
 
+            topRow.appendChild(handle);
             topRow.appendChild(info);
             topRow.appendChild(right);
 
@@ -911,6 +969,7 @@
         });
 
         renderReceipt();
+        initOrderLinesSortable();
     }
 
     // ===== 开单：合计 & 票据 =====
