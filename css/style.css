@@ -836,6 +836,36 @@ body {
 .tpl-item-price-input { width: 110px; flex-shrink: 0; }
 .tpl-item-row .line-del { flex-shrink: 0; }
 
+/* ===== 拖拽手柄 & 排序反馈 ===== */
+.drag-handle {
+    flex-shrink: 0;
+    width: 22px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c0c4cc;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    font-size: 14px;
+    letter-spacing: -2px;
+    /* 扩大可点区域，便于移动端拖拽 */
+    position: relative;
+}
+.drag-handle:active { cursor: grabbing; }
+.drag-handle:hover { color: #8a8f99; }
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f0f6ff;
+}
+.sortable-drag {
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
 /* ===== 模板选择抽屉 ===== */
 #tpl-drawer .drawer-item {
     cursor: pointer;
